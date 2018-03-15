@@ -11,3 +11,34 @@ type RequestHandler interface {
 	GetRequestBody() map[string]string
 }
 
+func GetLimit() int {
+
+}
+
+func GetOffset() int {
+
+}
+
+func GetPreTags() string {
+
+}
+
+func GetPostTags() string {
+
+}
+
+func IsHighlighted() bool {
+
+}
+
+func GetHighlightedFields() []string {
+
+}
+
+func GetRequestMethod() string {
+
+}
+
+func GetRequestBody() map[string]string {
+
+}
