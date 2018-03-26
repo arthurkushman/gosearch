@@ -135,7 +135,6 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 		docData, _ := redis.Bytes(sf.Stg.redis.Do("hget", sf.Stg.IncrKey, docSha))
 		data := Unser(docData)
 		if len(data) == 0 {
-			//throw new RequestException(Errors::REQUEST_MESSAGES[Errors::REQUEST_URI_DOC_ID_NOT_FOUND], Errors::REQUEST_URI_DOC_ID_NOT_FOUND);
 			sf.Err.ErrCode = ErrCodeDocIdNotFound
 			sf.Err.ErrMsg = "Doc ID not found"
 			EchoError(w, HttpEror400, sf.Err)
