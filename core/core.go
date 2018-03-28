@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"net/http"
 	"bytes"
+	"crypto/sha1"
 )
 
 const (
@@ -25,6 +26,18 @@ const (
 	IdDocMatch     = "MATCHING"
 	ReadBufferSize = 8094
 	ResultFound    = "found"
+	// canonical values
+	FIELDS          = "fields"
+	PROPERTIES      = "properties"
+	STRUCTURE       = "structure"
+	ALIASES         = "aliases"
+	MAPPINGS        = "mappings"
+	FIELD_TYPE      = "type"
+	IGNORE_ABOVE    = "ignore_above"
+	DATA_SOURCE     = "source"
+	DATA_DEST       = "dest"
+	DATA_INDEX      = "index"
+	DATA_INDEX_TYPE = "index_type"
 )
 
 // index specific constants
@@ -68,15 +81,19 @@ type Core interface {
 }
 
 type Fields struct {
-	OpType    string
-	OpStatus  bool
-	Source    string // json source
-	Id        uint64 // doc id
-	Index     string
-	IndexType string
-	incrKey   string
-	Version   uint64
-	Timestamp uint64
+	OpType        string
+	OpStatus      bool
+	Result        string
+	Source        string // json source
+	Id            uint64 // doc id
+	Index         string
+	IndexType     string
+	IncrKey       string
+	Version       uint64
+	Timestamp     uint64
+	IsSearch      bool
+	Took          int64
+	RequestSource []byte
 }
 
 type Storage struct {
@@ -130,7 +147,7 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 	sf.redisConn()
 	defer sf.Stg.redis.Close()
 	docSha, err := sf.Stg.redis.Do("hget", incrMatch, sf.Fld.Id)
-	if err != nil {
+	if err == nil {
 		// get serialized data
 		docData, _ := redis.Bytes(sf.Stg.redis.Do("hget", sf.Stg.IncrKey, docSha))
 		data := Unser(docData)
@@ -164,10 +181,6 @@ func ParseInput(data []byte) map[string]string {
 	return fieldValueMap
 }
 
-func BuildIndex() {
-
-}
-
 func EchoError(w http.ResponseWriter, errCode int, err Error) {
 	w.WriteHeader(errCode)
 	buff := composeError(err)
@@ -180,4 +193,38 @@ func composeError(err Error) []byte {
 	buff.WriteString("\"message\": \"" + err.ErrMsg + "\"")
 	buff.WriteString("}")
 	return buff.Bytes()
+}
+
+func (sf *StoreFields) GetDocInfo() (reply interface{}, err error) {
+	docSha := sha1.Sum([]byte(sf.Fld.Source))
+	return sf.Stg.redis.Do(sf.Fld.IncrKey, docSha)
+}
+
+func (sf *StoreFields) SetCanonicalIndex() {
+	docSha, err := sf.Stg.redis.Do("hget", sf.Fld.Index, STRUCTURE)
+	if err == nil && docSha != nil {
+
+	}
+}
+
+func (sf *StoreFields) Insert() {
+
+}
+
+/**
+ *  Sets the only source doc from input stream
+ */
+func (sf *StoreFields) SetSourceDocument(r *http.Request) {
+	sf.Fld.RequestSource = Ser(sf.ReadJsonBody(r))
+}
+
+func (sf *StoreFields) ReadJsonBody(r *http.Request) map[string]string {
+	buf := make([]byte, ReadBufferSize)
+	n, err := r.Body.Read(buf)
+	if err != nil || n > ReadBufferSize {
+		panic("Error reading from input stream: " + err.Error())
+	}
+	var data map[string]string
+	json.Unmarshal(buf, data)
+	return data
 }

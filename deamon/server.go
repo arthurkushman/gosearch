@@ -15,12 +15,13 @@ type Router interface {
 }
 
 func Search(w http.ResponseWriter, r *http.Request) {
-	var fields = core.StoreFields{}
-	fields.PerformSearch(w, r)
+	var sf = core.StoreFields{}
+	sf.PerformSearch(w, r)
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-
+	var sf = core.StoreFields{}
+	sf.BuildIndex(w, r)
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {
