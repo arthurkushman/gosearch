@@ -10,10 +10,10 @@ func GetMillis() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func GetJsonBody(buff []byte) map[string]string {
-
-}
-
-func GetJsonString() {
-
-}
+//func GetJsonBody(buff []byte) map[string]string {
+//
+//}
+//
+//func GetJsonString() {
+//
+//}

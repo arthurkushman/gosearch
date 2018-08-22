@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"bytes"
 	"crypto/sha1"
+	"fmt"
 )
 
 const (
@@ -202,12 +203,25 @@ func (sf *StoreFields) GetDocInfo() (reply interface{}, err error) {
 
 func (sf *StoreFields) SetCanonicalIndex() {
 	docSha, err := sf.Stg.redis.Do("hget", sf.Fld.Index, STRUCTURE)
+ 	var data interface{}
 	if err == nil && docSha != nil {
-
+		data = docSha
+	} else {
+		data := map[string]map[string]interface{
+			sf.Fld.Index : map[string]string{
+				ALIASES : interface{}
+			},
+		}
 	}
+	fmt.Print(data)
+	sf.Stg.redis.Do("hset", sf.Fld.Index, STRUCTURE, Unser())
 }
 
 func (sf *StoreFields) Insert() {
+
+}
+
+func (sf *StoreFields) SetMappings() {
 
 }
 
