@@ -3,12 +3,17 @@ package core
 import (
 	"github.com/gorilla/mux"
 	"net/http"
+	"fmt"
+	"os"
 )
 
 func (sf *StoreFields) BuildIndex(w http.ResponseWriter, r *http.Request) {
 	route := mux.Vars(r)
 	sf.Fld.Index = route["Index"]
 	sf.Fld.IndexType = route["indextype"]
+	fmt.Println(sf.Fld)
+	os.Exit(1)
+
 	sf.SetIncrKey()
 	// start indexing
 	tStart := GetMillis()

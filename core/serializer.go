@@ -7,19 +7,23 @@ type Serialize interface {
 	Unser(data []byte) map[string]*json.RawMessage
 }
 
-func Ser(data map[string]string) []byte {
+func Ser(data map[string]interface{}) []byte {
 	objData, err := json.Marshal(data)
+
 	if err != nil {
 		panic(err)
 	}
+
 	return objData
 }
 
-func Unser(data []byte) map[string]string {
-	var objmap map[string]string
+func Unser(data []byte) map[string]interface{} {
+	var objmap map[string]interface{}
 	err := json.Unmarshal(data, &objmap)
+
 	if err != nil {
 		panic(err)
 	}
+
 	return objmap
 }

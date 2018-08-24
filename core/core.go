@@ -6,16 +6,16 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"time"
 	"flag"
-	"strconv"
 	"net/http"
 	"bytes"
 	"crypto/sha1"
 	"fmt"
+	"io"
 )
 
 const (
-	QUERY = "query"
-	TERM  = "term"
+	Query = "query"
+	Term  = "term"
 	// offset/limit
 	OFFSET = "offset"
 	LIMIT  = "limit"
@@ -157,12 +157,13 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 			sf.Err.ErrMsg = "Doc ID not found"
 			EchoError(w, HttpEror400, sf.Err)
 		}
+
 		sf.Fld.OpType = ResultFound
 		sf.Fld.OpStatus = true
-		sf.Fld.Source = data[SOURCE]
-		sf.Fld.Id, _ = strconv.ParseUint(data[ID], 10, 64)
-		sf.Fld.Version, _ = strconv.ParseUint(data[VERSION], 10, 32)
-		sf.Fld.Timestamp, _ = strconv.ParseUint(data[TIMESTAMP], 10, 32)
+		sf.Fld.Source = data[SOURCE].(string)
+		sf.Fld.Id = data[ID].(uint64)
+		sf.Fld.Version = data[VERSION].(uint64)
+		sf.Fld.Timestamp = data[TIMESTAMP].(uint64)
 	}
 }
 
@@ -178,7 +179,8 @@ func ParseInput(data []byte) map[string]string {
 	var fieldValueMap = make(map[string]string)
 	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		json.Unmarshal(value, fieldValueMap)
-	}, "query", "term")
+	}, Query, Term)
+
 	return fieldValueMap
 }
 
@@ -207,14 +209,14 @@ func (sf *StoreFields) SetCanonicalIndex() {
 	if err == nil && docSha != nil {
 		data = docSha
 	} else {
-		data := map[string]map[string]interface{
-			sf.Fld.Index : map[string]string{
-				ALIASES : interface{}
-			},
-		}
+		//data := map[string]map[string]interface{
+			//sf.Fld.Index : map[string]string{
+			//	ALIASES : interface{}
+			//},
+		//}
 	}
 	fmt.Print(data)
-	sf.Stg.redis.Do("hset", sf.Fld.Index, STRUCTURE, Unser())
+	sf.Stg.redis.Do("hset", sf.Fld.Index, STRUCTURE, data)
 }
 
 func (sf *StoreFields) Insert() {
@@ -232,13 +234,22 @@ func (sf *StoreFields) SetSourceDocument(r *http.Request) {
 	sf.Fld.RequestSource = Ser(sf.ReadJsonBody(r))
 }
 
-func (sf *StoreFields) ReadJsonBody(r *http.Request) map[string]string {
+/**
+ * Reads json body form request
+ */
+func (sf *StoreFields) ReadJsonBody(r *http.Request) map[string]interface{} {
 	buf := make([]byte, ReadBufferSize)
 	n, err := r.Body.Read(buf)
-	if err != nil || n > ReadBufferSize {
+	jsonBytes := buf[:n]
+
+	if (err != nil && err != io.EOF) || n > ReadBufferSize {
 		panic("Error reading from input stream: " + err.Error())
 	}
-	var data map[string]string
-	json.Unmarshal(buf, data)
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(jsonBytes, &data); err != nil {
+		panic(err)
+	}
+
 	return data
 }
