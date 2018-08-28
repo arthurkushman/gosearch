@@ -39,13 +39,23 @@ func Info(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	r.Headers("Content-Type", "application/json")
-	r.HandleFunc("/articles", IndexInfo).Methods("GET")
-	r.HandleFunc("/articles", Info).Methods("GET")
+
+	// get index info requests
+	r.HandleFunc("/{index}", IndexInfo).Methods("GET")
+	r.HandleFunc("/{index}", Info).Methods("GET")
+
+	// search requests
 	r.HandleFunc("/{index}", Search).Methods("POST")
 	r.HandleFunc("/{index}/{indextype}", Search).Methods("POST")
 	r.HandleFunc("/{index}/{indextype}/{id:[0-9]+}", Search).Methods("GET")
-	r.HandleFunc("/products", Index).Methods("POST")
-	r.HandleFunc("/articles", Delete).Methods("DELETE")
+
+	// insert/update requests
+	r.HandleFunc("/{index}", Index).Methods("PUT")
+	r.HandleFunc("/{index}/{indextype}", Index).Methods("PUT")
+
+	// delete doc request
+	r.HandleFunc("/{index}", Delete).Methods("DELETE")
+
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         "127.0.0.1:8000",

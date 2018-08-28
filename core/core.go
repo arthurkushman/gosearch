@@ -16,17 +16,19 @@ import (
 const (
 	Query = "query"
 	Term  = "term"
+
 	// offset/limit
-	OFFSET = "offset"
-	LIMIT  = "limit"
+	Offset = "offset"
+	Limit  = "limit"
+
 	// highlight settings
-	HIGHLIGHT      = "highlight"
+	Highlight      = "highlight"
 	PreTags        = "pre_tags"
 	PostTags       = "post_tags"
 	HashIndexGlue  = ":"
 	IdDocMatch     = "MATCHING"
 	ReadBufferSize = 8094
-	ResultFound    = "found"
+
 	// canonical values
 	FIELDS          = "fields"
 	PROPERTIES      = "properties"
@@ -43,29 +45,30 @@ const (
 
 // index specific constants
 const (
-	TOOK      = "took"
-	TIMED_OUT = "timed_out"
-	HITS      = "hits"
-	TOTAL     = "total"
-	INDICES   = "indices"
+	Took     = "took"
+	TimedOut = "timed_out"
+	Hits     = "hits"
+	Total    = "total"
+	Indices  = "indices"
 	// system reserved keywords
-	INDEX     = "_index"
-	TYPE      = "_type"
-	SOURCE    = "_source"
-	ID        = "_id"
-	TIMESTAMP = "_timestamp"
-	VERSION   = "_version"
-	ALL       = "_all"
-	RESULT    = "result"
-	DOCUMENT  = "_document"
-	CAT       = "_cat"
-	REINDEX   = "_reindex"
+	Index     = "_index"
+	Type      = "_type"
+	Source    = "_source"
+	Id        = "_id"
+	Timestamp = "_timestamp"
+	Version   = "_version"
+	All       = "_all"
+	Result    = "result"
+	Document  = "_document"
+	Cat       = "_cat"
+	Reindex   = "_reindex"
+
 	// op results
-	RESULT_DELETED   = "deleted"
-	RESULT_CREATED   = "created"
-	RESULT_UPDATED   = "updated"
-	RESULT_FOUND     = "found"
-	RESULT_NOT_FOUND = "not found"
+	ResultDeleted  = "deleted"
+	ResultCreated  = "created"
+	ResultUpdated  = "updated"
+	ResultFound    = "found"
+	ResultNotFound = "not found"
 )
 
 const (
@@ -89,7 +92,6 @@ type Fields struct {
 	Id            uint64 // doc id
 	Index         string
 	IndexType     string
-	IncrKey       string
 	Version       uint64
 	Timestamp     uint64
 	IsSearch      bool
@@ -138,7 +140,7 @@ func (sf *StoreFields) redisConn() {
 }
 
 /**
- * Searches document by uri routed ID
+ * Searches document by uri routed Id
  */
 func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 	sf.SetIncrKey()
@@ -154,16 +156,16 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 		data := Unser(docData)
 		if len(data) == 0 {
 			sf.Err.ErrCode = ErrCodeDocIdNotFound
-			sf.Err.ErrMsg = "Doc ID not found"
+			sf.Err.ErrMsg = "Doc Id not found"
 			EchoError(w, HttpEror400, sf.Err)
 		}
 
 		sf.Fld.OpType = ResultFound
 		sf.Fld.OpStatus = true
-		sf.Fld.Source = data[SOURCE].(string)
-		sf.Fld.Id = data[ID].(uint64)
-		sf.Fld.Version = data[VERSION].(uint64)
-		sf.Fld.Timestamp = data[TIMESTAMP].(uint64)
+		sf.Fld.Source = data[Source].(string)
+		sf.Fld.Id = data[Id].(uint64)
+		sf.Fld.Version = data[Version].(uint64)
+		sf.Fld.Timestamp = data[Timestamp].(uint64)
 	}
 }
 
@@ -190,29 +192,35 @@ func EchoError(w http.ResponseWriter, errCode int, err Error) {
 	w.Write(buff)
 }
 
+func EchoResult(w http.ResponseWriter, data []byte, statusCode int) {
+	w.WriteHeader(statusCode)
+	w.Write(data)
+}
+
 func composeError(err Error) []byte {
 	buff := bytes.NewBufferString("{")
 	buff.WriteString("\"code\": \"" + err.ErrCode + "\"")
 	buff.WriteString("\"message\": \"" + err.ErrMsg + "\"")
 	buff.WriteString("}")
+
 	return buff.Bytes()
 }
 
 func (sf *StoreFields) GetDocInfo() (reply interface{}, err error) {
 	docSha := sha1.Sum([]byte(sf.Fld.Source))
-	return sf.Stg.redis.Do(sf.Fld.IncrKey, docSha)
+	return sf.Stg.redis.Do(sf.Stg.IncrKey, docSha)
 }
 
 func (sf *StoreFields) SetCanonicalIndex() {
 	docSha, err := sf.Stg.redis.Do("hget", sf.Fld.Index, STRUCTURE)
- 	var data interface{}
+	var data interface{}
 	if err == nil && docSha != nil {
 		data = docSha
 	} else {
 		//data := map[string]map[string]interface{
-			//sf.Fld.Index : map[string]string{
-			//	ALIASES : interface{}
-			//},
+		//sf.Fld.Index : map[string]string{
+		//	ALIASES : interface{}
+		//},
 		//}
 	}
 	fmt.Print(data)

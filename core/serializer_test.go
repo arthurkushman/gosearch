@@ -6,10 +6,11 @@ import (
 )
 
 func TestSer(t *testing.T) {
-	mapObj := map[string]string{
-		"title":       "foo",
-		"description": "foo bar baz",
-	}
+	mapObj := make(map[string]interface{})
+
+	mapObj["title"] = "foo"
+	mapObj["description"] = "foo bar baz"
+
 	dataBytes := Ser(mapObj)
 	if len(dataBytes) != len([]byte(`{"title":"foo","description":"foo bar baz"}`)) {
 		t.Error("Error: data bytes are not equal")
