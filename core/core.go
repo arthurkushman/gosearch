@@ -11,6 +11,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
+	"strings"
+	"crypto/md5"
 )
 
 const (
@@ -26,6 +28,7 @@ const (
 	PreTags        = "pre_tags"
 	PostTags       = "post_tags"
 	HashIndexGlue  = ":"
+	ListIndexGlue  = "___"
 	IdDocMatch     = "MATCHING"
 	ReadBufferSize = 8094
 
@@ -85,10 +88,11 @@ type Core interface {
 }
 
 type Fields struct {
-	OpType        string
-	OpStatus      bool
-	Result        string
-	Source        string // json source
+	OpType   string
+	OpStatus bool
+	Result   string
+	// source indexed document
+	Source        map[string]interface{}
 	Id            uint64 // doc id
 	Index         string
 	IndexType     string
@@ -100,8 +104,12 @@ type Fields struct {
 }
 
 type Storage struct {
-	redis   redis.Conn
-	IncrKey string
+	redis        redis.Conn
+	IncrKey      string
+	HashIndexKey string
+	ListIndexKey string
+	WordHashes   map[string]uint8
+	DocHashes    map[string]uint8
 }
 
 type Error struct {
@@ -162,7 +170,7 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 
 		sf.Fld.OpType = ResultFound
 		sf.Fld.OpStatus = true
-		sf.Fld.Source = data[Source].(string)
+		sf.Fld.Source = data[Source].(map[string]interface{})
 		sf.Fld.Id = data[Id].(uint64)
 		sf.Fld.Version = data[Version].(uint64)
 		sf.Fld.Timestamp = data[Timestamp].(uint64)
@@ -175,6 +183,24 @@ func (sf *StoreFields) SetIncrKey() {
 		idxTypeGlue = HashIndexGlue + sf.Fld.IndexType
 	}
 	sf.Stg.IncrKey = sf.Fld.Index + idxTypeGlue
+}
+
+func (sf *StoreFields) SetHashIndexKey() {
+	var idxTypeGlue = HashIndexGlue
+	if sf.Fld.IndexType != "" {
+		idxTypeGlue = HashIndexGlue + sf.Fld.IndexType + HashIndexGlue
+	}
+
+	sf.Stg.HashIndexKey = sf.Fld.Index + idxTypeGlue
+}
+
+func (sf *StoreFields) SetListIndexKey() {
+	var idxTypeGlue = ListIndexGlue
+	if sf.Fld.IndexType != "" {
+		idxTypeGlue = ListIndexGlue + sf.Fld.IndexType + ListIndexGlue
+	}
+
+	sf.Stg.ListIndexKey = sf.Fld.Index + idxTypeGlue
 }
 
 func ParseInput(data []byte) map[string]string {
@@ -207,7 +233,9 @@ func composeError(err Error) []byte {
 }
 
 func (sf *StoreFields) GetDocInfo() (reply interface{}, err error) {
-	docSha := sha1.Sum([]byte(sf.Fld.Source))
+	sourceStr := Ser(sf.Fld.Source)
+	docSha := sha1.Sum([]byte(sourceStr))
+
 	return sf.Stg.redis.Do(sf.Stg.IncrKey, docSha)
 }
 
@@ -228,6 +256,32 @@ func (sf *StoreFields) SetCanonicalIndex() {
 }
 
 func (sf *StoreFields) Insert() {
+	for field, value := range sf.Fld.Source {
+		words := strings.Fields(value.(string))
+		for _, word := range words {
+			sf.insertWord(field, word)
+		}
+	}
+}
+
+func (sf *StoreFields) insertWord(field, word string) {
+	wordHash := md5.Sum([]byte(field + word))
+	fmt.Println(sf.Stg.WordHashes[string(wordHash[:md5.Size])])
+
+	// to avoid duplicate indexing
+	if _, ok := sf.Stg.WordHashes[string(wordHash[:md5.Size])]; !ok {
+		sf.Stg.WordHashes[string(wordHash[:md5.Size])] = 1;
+		if sf.Fld.Id == 0 {
+			sf.setIndexData()
+		}
+	}
+}
+
+func (sf *StoreFields) setIndexData() {
+
+}
+
+func (sf *StoreFields) setRequestDocument() {
 
 }
 

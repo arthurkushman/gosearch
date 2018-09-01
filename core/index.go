@@ -14,8 +14,9 @@ func (sf *StoreFields) BuildIndex(w http.ResponseWriter, r *http.Request) {
 
 	// perform redis connection
 	sf.redisConn()
-
 	sf.SetIncrKey()
+	sf.SetHashIndexKey()
+	sf.SetListIndexKey()
 
 	// start indexing
 	tStart := GetMillis()
@@ -26,7 +27,7 @@ func (sf *StoreFields) BuildIndex(w http.ResponseWriter, r *http.Request) {
 
 	if docInfo == nil { // insert
 		sf.SetCanonicalIndex()
-		//$this- > insert()
+		sf.Insert()
 		sf.Fld.Result = ResultCreated
 		created = true
 	} else { // update
