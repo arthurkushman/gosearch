@@ -35,8 +35,8 @@ const (
 	// canonical values
 	FIELDS          = "fields"
 	PROPERTIES      = "properties"
-	STRUCTURE       = "structure"
-	ALIASES         = "aliases"
+	Structure       = "structure"
+	Aliases         = "aliases"
 	MAPPINGS        = "mappings"
 	FIELD_TYPE      = "type"
 	IGNORE_ABOVE    = "ignore_above"
@@ -161,8 +161,11 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 	if err == nil {
 		// get serialized data
 		docData, _ := redis.Bytes(sf.Stg.redis.Do("hget", sf.Stg.IncrKey, docSha))
+
 		data := Unser(docData)
-		if len(data) == 0 {
+
+		fmt.Println(data)
+		if data == nil {
 			sf.Err.ErrCode = ErrCodeDocIdNotFound
 			sf.Err.ErrMsg = "Doc Id not found"
 			EchoError(w, HttpEror400, sf.Err)
@@ -170,10 +173,10 @@ func (sf *StoreFields) SearchById(w http.ResponseWriter) {
 
 		sf.Fld.OpType = ResultFound
 		sf.Fld.OpStatus = true
-		sf.Fld.Source = data[Source].(map[string]interface{})
-		sf.Fld.Id = data[Id].(uint64)
-		sf.Fld.Version = data[Version].(uint64)
-		sf.Fld.Timestamp = data[Timestamp].(uint64)
+		//sf.Fld.Source = data[Source].(map[string]interface{})
+		//sf.Fld.Id = data[Id].(uint64)
+		//sf.Fld.Version = data[Version].(uint64)
+		//sf.Fld.Timestamp = data[Timestamp].(uint64)
 	}
 }
 
@@ -234,25 +237,25 @@ func composeError(err Error) []byte {
 
 func (sf *StoreFields) GetDocInfo() (reply interface{}, err error) {
 	sourceStr := Ser(sf.Fld.Source)
-	docSha := sha1.Sum([]byte(sourceStr))
+	docSha := sha1.Sum(sourceStr)
 
-	return sf.Stg.redis.Do(sf.Stg.IncrKey, docSha)
+	return sf.Stg.redis.Do("hget", sf.Stg.IncrKey, docSha)
 }
 
 func (sf *StoreFields) SetCanonicalIndex() {
-	docSha, err := sf.Stg.redis.Do("hget", sf.Fld.Index, STRUCTURE)
+	docSha, err := sf.Stg.redis.Do("hget", sf.Fld.Index, Structure)
 	var data interface{}
 	if err == nil && docSha != nil {
 		data = docSha
 	} else {
-		//data := map[string]map[string]interface{
-		//sf.Fld.Index : map[string]string{
-		//	ALIASES : interface{}
-		//},
-		//}
+		data := make(map[string]map[string]interface{})
+		data[sf.Fld.Index] = make(map[string]interface{})
+		data[sf.Fld.Index][Aliases] = make([]interface{}, 1)
+		fmt.Println(123)
 	}
-	fmt.Print(data)
-	sf.Stg.redis.Do("hset", sf.Fld.Index, STRUCTURE, data)
+	fmt.Println(123)
+	//fmt.Print(data)
+	sf.Stg.redis.Do("hset", sf.Fld.Index, Structure, data)
 }
 
 func (sf *StoreFields) Insert() {
@@ -278,7 +281,16 @@ func (sf *StoreFields) insertWord(field, word string) {
 }
 
 func (sf *StoreFields) setIndexData() {
+	fmt.Println(sf.Stg.IncrKey)
+	docSha := Ser(sf.Fld.Source)
+	docShaData, err := sf.Stg.redis.Do("hget", sf.Stg.IncrKey, docSha)
 
+	if err != nil {
+		panic(err)
+	}
+
+	data := docShaData
+	fmt.Println(data)
 }
 
 func (sf *StoreFields) setRequestDocument() {

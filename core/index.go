@@ -23,7 +23,7 @@ func (sf *StoreFields) BuildIndex(w http.ResponseWriter, r *http.Request) {
 
 	var created = false
 	docInfo, _ := sf.GetDocInfo()
-	fmt.Println(docInfo)
+	fmt.Println("docInfo: ", docInfo)
 
 	if docInfo == nil { // insert
 		sf.SetCanonicalIndex()

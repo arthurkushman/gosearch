@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"github.com/gorilla/mux"
 	"strconv"
+	"fmt"
 )
 
 type Get interface {
@@ -27,7 +28,11 @@ func (sf *StoreFields) PerformSearch(w http.ResponseWriter, r *http.Request) {
 		sf.Fld.Index = route["Index"]
 		sf.Fld.IndexType = route["indextype"]
 		sf.SetSourceDocument(r)
+
+		fmt.Println(sf.Fld.RequestSource)
 		input := ParseInput(sf.Fld.RequestSource)
+		fmt.Println(input)
+
 		sf.SearchPhrase(input)
 	}
 
